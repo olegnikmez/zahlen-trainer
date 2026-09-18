@@ -240,7 +240,8 @@
   </div>
 
   <footer class="w-full max-w-xl text-center text-slate-600 text-[11px] py-2">
-    Использует Web Speech API для немецкого языка (de-DE). Горячие клавиши: [Пробел] — Пуск/Пауза, [→] — Дальше.
+    Использует Web Speech API для немецкого языка (de-DE). Горячие клавиши: [Пробел] — Пуск/Пауза, [→] — Дальше.<br>
+    <span class="text-indigo-400/70">Во время активной тренировки экран устройства не гаснет.</span>
   </footer>
 
   <script>
@@ -318,6 +319,35 @@
       activeUtterance: null,
       audioWaitTimeout: null
     };
+
+    // --- ЛОГИКА УДЕРЖАНИЯ ЭКРАНА (Screen Wake Lock) ---
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.warn(`Wake Lock error: ${err.name}, ${err.message}`);
+        }
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release().then(() => {
+          wakeLock = null;
+        });
+      }
+    }
+
+    // Если пользователь свернул браузер и развернул, нужно заново запрашивать блокировку
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && app.running && !app.paused) {
+        requestWakeLock();
+      }
+    });
+    // ---------------------------------------------------
 
     // Элементы интерфейса
     const modeVisualBtn = document.getElementById('modeVisualBtn');
@@ -717,6 +747,9 @@
       app.running = true;
       app.paused = false;
 
+      // Запрашиваем блокировку экрана при старте
+      requestWakeLock();
+
       toggleButtonText.textContent = 'ПАУЗА';
       playSvg.classList.add('hidden');
       pauseSvg.classList.remove('hidden');
@@ -736,6 +769,9 @@
       cancelAnimationFrame(app.timerAnimId);
       clearTimeout(app.audioWaitTimeout);
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      // Снимаем блокировку экрана при паузе
+      releaseWakeLock();
 
       toggleButtonText.textContent = 'ПРОДОЛЖИТЬ';
       playSvg.classList.remove('hidden');
@@ -763,6 +799,7 @@
       if (!app.running) {
         app.running = true;
         app.paused = false;
+        requestWakeLock(); // Включаем удержание экрана, если снято с паузы через "Дальше"
         toggleButtonText.textContent = 'ПАУЗА';
         playSvg.classList.add('hidden');
         pauseSvg.classList.remove('hidden');

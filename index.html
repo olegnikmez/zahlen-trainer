@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тренажёр чисел на немецком (Zahlen-Trainer)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-num {
+      font-family: 'JetBrains+Mono', monospace;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.3; transform: scale(0.98); }
+      50% { opacity: 0.7; transform: scale(1.05); }
+    }
+    .glow-active {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    @keyframes bar-dance {
+      0%, 100% { height: 6px; }
+      50% { height: 28px; }
+    }
+    .wave-bar {
+      animation: bar-dance 0.7s infinite alternate ease-in-out;
+    }
+    .wave-bar:nth-child(1) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.25s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.55s; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 selection:bg-amber-500 selection:text-slate-950">
+
+  <header class="w-full max-w-xl flex items-center justify-between pb-3 pt-1 border-b border-slate-800/80">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center text-lg shadow-md shadow-amber-500/20">
+        🇩🇪
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-rose-300 to-indigo-300">
+          Zahlen-Trainer
+        </h1>
+        <p class="text-[11px] text-slate-400">Тренировка чисел на немецком на слух</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-num px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+        Счётчик: <strong id="counterDisplay" class="text-amber-400">0</strong>
+      </span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-xl flex flex-col gap-4 my-auto py-3">
+    
+    <!-- Панель управления параметрами -->
+    <div class="bg-slate-900/90 backdrop-blur border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-xl">
+      
+      <!-- Режим тренировки -->
+      <div class="mb-4 pb-4 border-b border-slate-800/80">
+        <label class="block text-xs font-semibold text-slate-300 mb-2">Режим тренировки:</label>
+        <div class="flex bg-slate-950 border border-slate-800 rounded-xl p-1 gap-1">
+          <button id="modeVisualBtn" class="flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95">👁️ Вижу → Называю</button>
+          <button id="modeAudioBtn" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-300 transition active:scale-95">🎧 Слышу → Узнаю</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        
+        <!-- Диапазон ОТ -->
+        <div>
+          <label for="rangeMin" class="block text-xs font-semibold text-slate-300 mb-1">
+            Диапазон ОТ:
+          </label>
+          <input type="number" id="rangeMin" value="0" min="0" max="999999"
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-sm font-num text-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none transition" />
+        </div>
+
+        <!-- Диапазон ДО -->
+        <div>
+          <label for="rangeMax" class="block text-xs font-semibold text-slate-300 mb-1">
+            Диапазон ДО:
+          </label>
+          <input type="number" id="rangeMax" value="100" min="0" max="999999"
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-sm font-num text-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none transition" />
+        </div>
+
+        <!-- Время на размышление (сек) -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="rangeSeconds" class="block text-xs font-semibold text-slate-300">
+              Время (сек):
+            </label>
+            <span id="secondsLabel" class="text-xs font-num text-amber-400 font-bold">3.0 сек</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="rangeSeconds" value="3.0" min="0.5" max="60" step="0.5"
+              class="w-16 bg-slate-950 border border-slate-700/80 rounded-xl px-2 py-2 text-sm font-num text-amber-300 focus:ring-2 focus:ring-amber-500 focus:outline-none transition text-center" />
+            <input type="range" id="secondsSlider" min="0.5" max="15" step="0.5" value="3.0"
+              class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500" />
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-col gap-3 text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="noRepeatCheck" checked class="rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-0 w-4 h-4 cursor-pointer">
+            <span class="text-slate-300">Без повторов в цикле</span>
+          </label>
+
+          <!-- Выбор доступного немецкого голоса -->
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Голос:</span>
+            <select id="voiceSelect" class="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none max-w-[180px] sm:max-w-[220px] truncate">
+              <option value="">По умолчанию (немецкий)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Регулятор скорости речи -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <span class="text-slate-400 font-medium">Скорость речи:</span>
+            <span id="rateValueDisplay" class="font-num text-amber-300 font-bold bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md text-[11px]">0.90x</span>
+            
+            <!-- Кнопка тестового воспроизведения -->
+            <button type="button" id="testVoiceBtn" class="ml-auto sm:ml-2 px-2.5 py-1 bg-indigo-950/80 border border-indigo-700/60 hover:bg-indigo-900 text-indigo-200 rounded-lg font-medium text-[11px] transition flex items-center gap-1 active:scale-95" title="Прослушать образец с текущей скоростью">
+              <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span>Тест</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-1/2">
+            <span class="text-[10px] text-slate-500 font-num">0.4x</span>
+            <input type="range" id="rateSlider" min="0.4" max="2.0" step="0.05" value="0.9"
+              class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500" />
+            <span class="text-[10px] text-slate-500 font-num">2.0x</span>
+          </div>
+
+          <!-- Быстрые пресеты скорости -->
+          <div class="flex items-center gap-1 self-end sm:self-center">
+            <button type="button" data-rate="0.6" class="rate-preset-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 text-[10px]">0.6x</button>
+            <button type="button" data-rate="0.9" class="rate-preset-btn px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px]">0.9x</button>
+            <button type="button" data-rate="1.2" class="rate-preset-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 text-[10px]">1.2x</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="arenaCard" class="relative bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center justify-center min-h-[300px] overflow-hidden">
+      
+      <!-- Верхний индикатор таймера -->
+      <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-800/70">
+        <div id="countdownBar" class="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 w-0 transition-all duration-75"></div>
+      </div>
+
+      <!-- Статус текущего действия -->
+      <div class="mb-2 flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60">
+        <span id="stateIndicatorDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span id="stateStatusText">Нажмите «ПУСК»</span>
+      </div>
+
+      <!-- Центральное число -->
+      <div class="relative my-3 flex items-center justify-center">
+        <div id="glowBackdrop" class="absolute w-40 h-40 rounded-full bg-amber-500/0 filter blur-3xl transition-all duration-500 pointer-events-none"></div>
+        <div id="bigNumberText" class="font-num font-extrabold text-7xl sm:text-8xl md:text-9xl text-slate-600 transition-colors duration-200">
+          --
+        </div>
+      </div>
+
+      <!-- Немецкое написание (появляется при озвучивании) -->
+      <div class="min-h-[48px] flex flex-col items-center justify-center text-center px-2">
+        <p id="germanWordText" class="text-lg sm:text-xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 opacity-0 transition-opacity duration-300">
+          &nbsp;
+        </p>
+      </div>
+
+      <!-- Анимированные полосы звука при говорении -->
+      <div id="audioWaveContainer" class="flex items-center gap-1.5 h-6 opacity-0 transition-opacity duration-200">
+        <div class="w-1 bg-amber-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-rose-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-indigo-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+      </div>
+
+      <!-- Остаток времени -->
+      <div class="absolute bottom-3 right-4 font-num text-xs text-slate-500">
+        Таймер: <span id="timeLeftLabel" class="text-slate-300 font-bold">--</span>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-center gap-3">
+      <!-- Кнопка Пуск / Пауза -->
+      <button id="mainToggleBtn" class="flex-1 max-w-[220px] py-3.5 px-6 rounded-2xl font-bold text-sm bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+        <svg id="playSvg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="pauseSvg" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="toggleButtonText">ПУСК</span>
+      </button>
+
+      <!-- Следующее число вручную -->
+      <button id="skipNextBtn" disabled class="py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-slate-200 active:scale-95 transition flex items-center gap-1.5">
+        <span>Дальше</span>
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M5 18l10-6-10-6v12zm11-12v12h2V6h-2z"/></svg>
+      </button>
+
+      <!-- Повторить озвучку -->
+      <button id="repeatVoiceBtn" disabled class="py-3.5 px-4 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-amber-300 active:scale-95 transition" title="Повторить произношение">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      </button>
+
+      <!-- Сброс -->
+      <button id="resetAllBtn" class="py-3.5 px-4 rounded-2xl text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 hover:bg-slate-850 active:scale-95 transition" title="Сбросить всё">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      </button>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 text-xs">
+      <div class="flex items-center justify-between mb-1.5 text-slate-400">
+        <span class="font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          История показанных чисел
+        </span>
+        <button id="clearHistoryBtn" class="text-[11px] text-slate-500 hover:text-slate-300">Очистить</button>
+      </div>
+      <div id="historyRow" class="flex items-center gap-2 overflow-x-auto py-1 min-h-[32px] text-slate-500 text-xs">
+        <span class="italic text-slate-600">Появятся здесь после первого раунда</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Всплывающее уведомление (Toast) -->
+  <div id="toastBox" class="fixed bottom-5 px-4 py-2 rounded-xl bg-rose-950 border border-rose-700 text-rose-200 text-xs shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50">
+    Внимание
+  </div>
+
+  <footer class="w-full max-w-xl text-center text-slate-600 text-[11px] py-2">
+    Использует Web Speech API для немецкого языка (de-DE). Горячие клавиши: [Пробел] — Пуск/Пауза, [→] — Дальше.
+  </footer>
+
+  <script>
+    // Алгоритм генерации чисел прописью на немецком языке (0 — 999 999)
+    const ONES = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+    const TEENS = [
+      'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 
+      'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'
+    ];
+    const TENS = ['', 'zehn', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+
+    function numberToGerman(num) {
+      if (num === 0) return 'null';
+      if (num === 1) return 'eins';
+      return convertGeneral(num);
+    }
+
+    function convertUnderHundred(n, isLastBlock = false) {
+      if (n === 0) return '';
+      if (n === 1) return isLastBlock ? 'eins' : 'ein';
+      if (n < 10) return ONES[n];
+      if (n < 20) return TEENS[n - 10];
+
+      const ten = Math.floor(n / 10);
+      const rem = n % 10;
+
+      if (rem === 0) return TENS[ten];
+      const unit = (rem === 1) ? 'ein' : ONES[rem];
+      return unit + 'und' + TENS[ten];
+    }
+
+    function convertUnderThousand(n, isLastBlock = true) {
+      let result = '';
+      const hundreds = Math.floor(n / 100);
+      const rem = n % 100;
+
+      if (hundreds > 0) {
+        result += (hundreds === 1 ? 'ein' : ONES[hundreds]) + 'hundert';
+      }
+      if (rem > 0) {
+        result += convertUnderHundred(rem, isLastBlock && hundreds === 0);
+      }
+      return result;
+    }
+
+    function convertGeneral(n) {
+      if (n < 100) return convertUnderHundred(n, true);
+      if (n < 1000) return convertUnderThousand(n, true);
+
+      const thousands = Math.floor(n / 1000);
+      const remainder = n % 1000;
+
+      let prefix = (thousands === 1) ? 'eintausend' : (convertUnderThousand(thousands, false) + 'tausend');
+      let suffix = remainder > 0 ? convertUnderThousand(remainder, true) : '';
+      return prefix + suffix;
+    }
+
+    const app = {
+      running: false,
+      paused: false,
+      mode: 'visual',
+      min: 0,
+      max: 100,
+      duration: 3.0,
+      timeLeft: 3.0,
+      speechRate: 0.9,
+      currentNum: null,
+      currentGerman: '',
+      history: [],
+      pool: [],
+      solved: 0,
+      timerAnimId: null,
+      startTime: null,
+      selectedVoice: null,
+      activeUtterance: null,
+      audioWaitTimeout: null
+    };
+
+    // Элементы интерфейса
+    const modeVisualBtn = document.getElementById('modeVisualBtn');
+    const modeAudioBtn = document.getElementById('modeAudioBtn');
+    const rangeMinEl = document.getElementById('rangeMin');
+    const rangeMaxEl = document.getElementById('rangeMax');
+    const rangeSecondsEl = document.getElementById('rangeSeconds');
+    const secondsSliderEl = document.getElementById('secondsSlider');
+    const secondsLabelEl = document.getElementById('secondsLabel');
+    const noRepeatCheckEl = document.getElementById('noRepeatCheck');
+    const rateSliderEl = document.getElementById('rateSlider');
+    const rateValueDisplayEl = document.getElementById('rateValueDisplay');
+    const voiceSelectEl = document.getElementById('voiceSelect');
+    const testVoiceBtn = document.getElementById('testVoiceBtn');
+    const ratePresetBtns = document.querySelectorAll('.rate-preset-btn');
+
+    const mainToggleBtn = document.getElementById('mainToggleBtn');
+    const toggleButtonText = document.getElementById('toggleButtonText');
+    const playSvg = document.getElementById('playSvg');
+    const pauseSvg = document.getElementById('pauseSvg');
+    const skipNextBtn = document.getElementById('skipNextBtn');
+    const repeatVoiceBtn = document.getElementById('repeatVoiceBtn');
+    const resetAllBtn = document.getElementById('resetAllBtn');
+
+    const bigNumberText = document.getElementById('bigNumberText');
+    const germanWordText = document.getElementById('germanWordText');
+    const audioWaveContainer = document.getElementById('audioWaveContainer');
+    const glowBackdrop = document.getElementById('glowBackdrop');
+    const countdownBar = document.getElementById('countdownBar');
+    const timeLeftLabel = document.getElementById('timeLeftLabel');
+    const stateIndicatorDot = document.getElementById('stateIndicatorDot');
+    const stateStatusText = document.getElementById('stateStatusText');
+    const counterDisplay = document.getElementById('counterDisplay');
+    const historyRow = document.getElementById('historyRow');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const toastBox = document.getElementById('toastBox');
+
+    modeVisualBtn.addEventListener('click', () => setMode('visual'));
+    modeAudioBtn.addEventListener('click', () => setMode('audio'));
+
+    function setMode(newMode) {
+      if (app.running) pauseWorkout();
+      app.mode = newMode;
+      
+      if (newMode === 'visual') {
+        modeVisualBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95';
+        modeAudioBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-300 transition active:scale-95';
+      } else {
+        modeAudioBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition active:scale-95';
+        modeVisualBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-300 transition active:scale-95';
+      }
+      resetAllBtn.click();
+    }
+
+    function populateVoices() {
+      if (!('speechSynthesis' in window)) return;
+      const allVoices = window.speechSynthesis.getVoices();
+      if (!allVoices || allVoices.length === 0) return;
+
+      // Находим голоса для немецкого языка (de-DE, de-AT, de-CH)
+      const germanVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+      
+      voiceSelectEl.innerHTML = '';
+      if (germanVoices.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Системный немецкий голос';
+        voiceSelectEl.appendChild(opt);
+        return;
+      }
+
+      germanVoices.forEach((voice, index) => {
+        const opt = document.createElement('option');
+        opt.value = voice.name;
+        opt.textContent = `${voice.name} (${voice.lang})${voice.localService ? ' [Локальный]' : ''}`;
+        voiceSelectEl.appendChild(opt);
+      });
+
+      // Предпочитаем естественные локальные немецкие голоса
+      const preferred = germanVoices.find(v => v.localService) || germanVoices[0];
+      if (preferred) {
+        app.selectedVoice = preferred;
+        voiceSelectEl.value = preferred.name;
+      }
+    }
+
+    voiceSelectEl.addEventListener('change', () => {
+      const voices = window.speechSynthesis.getVoices();
+      app.selectedVoice = voices.find(v => v.name === voiceSelectEl.value) || null;
+    });
+
+    function updateSpeechRate(newRate) {
+      let r = parseFloat(newRate);
+      if (isNaN(r)) r = 0.9;
+      r = Math.max(0.4, Math.min(2.0, r));
+      app.speechRate = r;
+      rateSliderEl.value = r;
+      rateValueDisplayEl.textContent = r.toFixed(2) + 'x';
+
+      ratePresetBtns.forEach(btn => {
+        const val = parseFloat(btn.dataset.rate);
+        if (Math.abs(val - r) < 0.04) {
+          btn.className = 'rate-preset-btn px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-bold text-[10px]';
+        } else {
+          btn.className = 'rate-preset-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 text-[10px]';
+        }
+      });
+    }
+
+    rateSliderEl.addEventListener('input', (e) => updateSpeechRate(e.target.value));
+
+    ratePresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        updateSpeechRate(btn.dataset.rate);
+        testSpeech();
+      });
+    });
+
+    testVoiceBtn.addEventListener('click', () => {
+      testSpeech();
+    });
+
+    function testSpeech() {
+      const sampleWords = ['siebenundzwanzig', 'vierundachtzig', 'dreihundertzehn', 'neunundfünfzig'];
+      const sample = sampleWords[Math.floor(Math.random() * sampleWords.length)];
+      speakText(sample, null);
+    }
+
+    function initSpeech() {
+      if (!('speechSynthesis' in window)) return;
+      populateVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = populateVoices;
+      }
+    }
+
+    function showToast(msg) {
+      toastBox.textContent = msg;
+      toastBox.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toastBox.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function syncSeconds(val) {
+      let sec = parseFloat(val);
+      if (isNaN(sec) || sec < 0.5) sec = 0.5;
+      if (sec > 60) sec = 60;
+      app.duration = sec;
+      if (rangeSecondsEl) rangeSecondsEl.value = sec;
+      if (secondsSliderEl) secondsSliderEl.value = Math.min(sec, 15);
+      if (secondsLabelEl) secondsLabelEl.textContent = sec.toFixed(1) + ' сек';
+    }
+
+    if (secondsSliderEl) {
+      secondsSliderEl.addEventListener('input', (e) => syncSeconds(e.target.value));
+    }
+    if (rangeSecondsEl) {
+      rangeSecondsEl.addEventListener('change', (e) => syncSeconds(e.target.value));
+    }
+
+    function validateRange() {
+      if (!rangeMinEl || !rangeMaxEl) return true;
+      let min = parseInt(rangeMinEl.value, 10);
+      let max = parseInt(rangeMaxEl.value, 10);
+      if (isNaN(min)) min = 0;
+      if (isNaN(max)) max = 100;
+      if (min < 0) min = 0;
+      if (max < min) {
+        showToast('Число "ОТ" не может быть больше числа "ДО"!');
+        return false;
+      }
+      if (max > 999999) {
+        max = 999999;
+        rangeMaxEl.value = 999999;
+      }
+      app.min = min;
+      app.max = max;
+      return true;
+    }
+
+    if (rangeMinEl) {
+      rangeMinEl.addEventListener('change', () => { validateRange(); resetPool(); });
+    }
+    if (rangeMaxEl) {
+      rangeMaxEl.addEventListener('change', () => { validateRange(); resetPool(); });
+    }
+
+    function resetPool() {
+      app.pool = [];
+      const count = app.max - app.min + 1;
+      if (count <= 250000 && noRepeatCheckEl.checked) {
+        app.pool = Array.from({ length: count }, (_, i) => app.min + i);
+        // Перемешивание Fisher-Yates
+        for (let i = app.pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [app.pool[i], app.pool[j]] = [app.pool[j], app.pool[i]];
+        }
+      }
+    }
+
+    function getNextNumber() {
+      if (noRepeatCheckEl.checked) {
+        if (app.pool.length === 0) resetPool();
+        if (app.pool.length > 0) return app.pool.pop();
+      }
+      return Math.floor(Math.random() * (app.max - app.min + 1)) + app.min;
+    }
+
+    function startTimer() {
+      app.timeLeft = app.duration;
+      app.startTime = performance.now();
+      cancelAnimationFrame(app.timerAnimId);
+      runFrame();
+    }
+
+    function startNextRound() {
+      if (!validateRange()) {
+        pauseWorkout();
+        return;
+      }
+
+      app.currentNum = getNextNumber();
+      app.currentGerman = numberToGerman(app.currentNum);
+
+      skipNextBtn.disabled = false;
+      repeatVoiceBtn.disabled = false;
+      clearTimeout(app.audioWaitTimeout);
+
+      if (app.mode === 'visual') {
+        // Визуализация нового числа (режим: Вижу -> Называю)
+        bigNumberText.textContent = app.currentNum;
+        bigNumberText.className = 'font-num font-extrabold text-7xl sm:text-8xl md:text-9xl text-slate-100 transition-colors duration-200';
+        
+        germanWordText.innerHTML = '&nbsp;';
+        germanWordText.classList.add('opacity-0');
+        audioWaveContainer.classList.add('opacity-0');
+
+        // Установка фазы ожидания
+        stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+        stateStatusText.textContent = 'Вспомните число...';
+        stateStatusText.className = 'text-amber-300';
+        glowBackdrop.className = 'absolute w-40 h-40 rounded-full bg-indigo-500/10 filter blur-3xl transition-all duration-500 pointer-events-none';
+
+        startTimer();
+      } else {
+        // Режим аудирования (Слышу -> Узнаю)
+        bigNumberText.textContent = '???';
+        bigNumberText.className = 'font-num font-extrabold text-7xl sm:text-8xl md:text-9xl text-slate-600 transition-colors duration-200';
+        
+        germanWordText.innerHTML = '&nbsp;';
+        germanWordText.classList.add('opacity-0');
+        audioWaveContainer.classList.remove('opacity-0');
+        
+        countdownBar.style.width = '0%';
+        timeLeftLabel.textContent = '--';
+
+        stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-indigo-400 animate-ping';
+        stateStatusText.textContent = 'Слушайте число...';
+        stateStatusText.className = 'text-indigo-300';
+        glowBackdrop.className = 'absolute w-40 h-40 rounded-full bg-indigo-500/20 filter blur-3xl transition-all duration-500 pointer-events-none glow-active';
+
+        speakText(app.currentGerman, () => {
+          if (!app.running || app.paused) return;
+          audioWaveContainer.classList.add('opacity-0');
+          glowBackdrop.classList.remove('glow-active');
+          
+          stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+          stateStatusText.textContent = 'Время на ответ...';
+          stateStatusText.className = 'text-amber-300';
+          
+          startTimer();
+        });
+      }
+    }
+
+    function runFrame() {
+      if (!app.running || app.paused) return;
+
+      const elapsed = (performance.now() - app.startTime) / 1000;
+      const left = Math.max(0, app.duration - elapsed);
+      app.timeLeft = left;
+
+      const pct = Math.min(100, Math.max(0, ((app.duration - left) / app.duration) * 100));
+      countdownBar.style.width = pct + '%';
+      timeLeftLabel.textContent = left.toFixed(1) + 'с';
+
+      if (left <= 0.05) {
+        countdownBar.style.width = '100%';
+        timeLeftLabel.textContent = '0.0с';
+        onTimerComplete();
+      } else {
+        app.timerAnimId = requestAnimationFrame(runFrame);
+      }
+    }
+
+    function onTimerComplete() {
+      addHistory(app.currentNum, app.currentGerman);
+      app.solved++;
+      counterDisplay.textContent = app.solved;
+
+      if (app.mode === 'visual') {
+        stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        stateStatusText.textContent = 'Озвучивание на немецком';
+        stateStatusText.className = 'text-emerald-300';
+
+        germanWordText.textContent = app.currentGerman;
+        germanWordText.classList.remove('opacity-0');
+        audioWaveContainer.classList.remove('opacity-0');
+        glowBackdrop.className = 'absolute w-48 h-48 rounded-full bg-amber-500/20 filter blur-3xl transition-all duration-500 pointer-events-none glow-active';
+
+        speakText(app.currentGerman, () => {
+          if (!app.running || app.paused) return;
+
+          // Пауза перед показом следующего числа
+          app.audioWaitTimeout = setTimeout(() => {
+            if (app.running && !app.paused) {
+              startNextRound();
+            }
+          }, 1100);
+        });
+      } else {
+        // Режим аудирования: показываем ответ
+        stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        stateStatusText.textContent = 'Правильный ответ';
+        stateStatusText.className = 'text-emerald-300';
+
+        bigNumberText.textContent = app.currentNum;
+        bigNumberText.className = 'font-num font-extrabold text-7xl sm:text-8xl md:text-9xl text-slate-100 transition-colors duration-200';
+        
+        germanWordText.textContent = app.currentGerman;
+        germanWordText.classList.remove('opacity-0');
+        glowBackdrop.className = 'absolute w-48 h-48 rounded-full bg-emerald-500/20 filter blur-3xl transition-all duration-500 pointer-events-none';
+
+        // Показываем ответ на 2 секунды, затем автоматически переходим к следующему
+        app.audioWaitTimeout = setTimeout(() => {
+          if (app.running && !app.paused) {
+            startNextRound();
+          }
+        }, 2000);
+      }
+    }
+
+    function speakText(text, callback) {
+      if (!('speechSynthesis' in window)) {
+        if (callback) callback();
+        return;
+      }
+
+      // Отменяем предыдущую речь
+      window.speechSynthesis.cancel();
+
+      // Небольшая задержка перед созданием Utterance для корректного сброса стека Chrome
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'de-DE';
+        utterance.rate = Number(app.speechRate); // Гарантированное числовое значение
+        utterance.pitch = 1.0;
+
+        if (app.selectedVoice) {
+          utterance.voice = app.selectedVoice;
+        }
+
+        // Сохраняем ссылку в глобальный app, предотвращая Garbage Collection в Chromium
+        app.activeUtterance = utterance;
+
+        let called = false;
+        const finishSpeaking = () => {
+          if (!called) {
+            called = true;
+            app.activeUtterance = null;
+            if (callback) callback();
+          }
+        };
+
+        utterance.onend = finishSpeaking;
+        utterance.onerror = (e) => {
+          finishSpeaking();
+        };
+
+        // Защитный таймаут на случай непредвиденного зависания синтезатора браузера
+        const expectedDurationMs = Math.max(1800, (text.length * 220) / app.speechRate);
+        setTimeout(finishSpeaking, expectedDurationMs + 500);
+
+        window.speechSynthesis.speak(utterance);
+      }, 35);
+    }
+
+    function startWorkout() {
+      if (!validateRange()) return;
+
+      // Разблокировка синтеза речи на первом клике (требование браузеров)
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
+
+      app.running = true;
+      app.paused = false;
+
+      toggleButtonText.textContent = 'ПАУЗА';
+      playSvg.classList.add('hidden');
+      pauseSvg.classList.remove('hidden');
+
+      if (app.currentNum === null) {
+        startNextRound();
+      } else {
+        // Продолжение после паузы
+        app.startTime = performance.now() - (app.duration - app.timeLeft) * 1000;
+        runFrame();
+      }
+    }
+
+    function pauseWorkout() {
+      app.paused = true;
+      app.running = false;
+      cancelAnimationFrame(app.timerAnimId);
+      clearTimeout(app.audioWaitTimeout);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      toggleButtonText.textContent = 'ПРОДОЛЖИТЬ';
+      playSvg.classList.remove('hidden');
+      pauseSvg.classList.add('hidden');
+
+      stateIndicatorDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+      stateStatusText.textContent = 'На паузе';
+      stateStatusText.className = 'text-slate-400';
+      audioWaveContainer.classList.add('opacity-0');
+    }
+
+    mainToggleBtn.addEventListener('click', () => {
+      if (app.running && !app.paused) {
+        pauseWorkout();
+      } else {
+        startWorkout();
+      }
+    });
+
+    skipNextBtn.addEventListener('click', () => {
+      cancelAnimationFrame(app.timerAnimId);
+      clearTimeout(app.audioWaitTimeout);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      if (!app.running) {
+        app.running = true;
+        app.paused = false;
+        toggleButtonText.textContent = 'ПАУЗА';
+        playSvg.classList.add('hidden');
+        pauseSvg.classList.remove('hidden');
+      }
+      startNextRound();
+    });
+
+    repeatVoiceBtn.addEventListener('click', () => {
+      if (app.currentNum !== null) {
+        speakText(app.currentGerman, null);
+      }
+    });
+
+    resetAllBtn.addEventListener('click', () => {
+      pauseWorkout();
+      clearTimeout(app.audioWaitTimeout);
+      app.currentNum = null;
+      app.currentGerman = '';
+      app.solved = 0;
+      counterDisplay.textContent = '0';
+      bigNumberText.textContent = '--';
+      bigNumberText.className = 'font-num font-extrabold text-7xl sm:text-8xl md:text-9xl text-slate-600 transition-colors duration-200';
+      germanWordText.innerHTML = '&nbsp;';
+      germanWordText.classList.add('opacity-0');
+      audioWaveContainer.classList.add('opacity-0');
+      countdownBar.style.width = '0%';
+      timeLeftLabel.textContent = '--';
+      skipNextBtn.disabled = true;
+      repeatVoiceBtn.disabled = true;
+      toggleButtonText.textContent = 'ПУСК';
+      resetPool();
+      stateStatusText.textContent = 'Нажмите «ПУСК»';
+    });
+
+    function addHistory(num, deText) {
+      if (app.history.length === 0) historyRow.innerHTML = '';
+      app.history.unshift({ num, deText });
+      if (app.history.length > 25) app.history.pop();
+
+      const chip = document.createElement('button');
+      chip.className = 'flex-shrink-0 bg-slate-800/90 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700/80 text-xs font-num transition flex items-center gap-1.5 cursor-pointer';
+      chip.innerHTML = `
+        <span class="font-bold text-amber-300">${num}</span>
+        <span class="text-slate-400 font-sans text-[11px]">${deText}</span>
+        <svg class="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      `;
+      chip.title = `Нажмите, чтобы прослушать: ${num}`;
+      chip.addEventListener('click', () => speakText(deText, null));
+
+      historyRow.insertBefore(chip, historyRow.firstChild);
+    }
+
+    clearHistoryBtn.addEventListener('click', () => {
+      app.history = [];
+      historyRow.innerHTML = '<span class="italic text-slate-600">История очищена</span>';
+    });
+
+    // Управление с клавиатуры
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        mainToggleBtn.click();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        if (!skipNextBtn.disabled) skipNextBtn.click();
+      }
+    });
+
+    // Инициализация при загрузке страницы
+    window.onload = () => {
+      initSpeech();
+      validateRange();
+      resetPool();
+    };
+  </script>
+</body>
+</html>

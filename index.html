@@ -35,7 +35,7 @@
     .wave-bar:nth-child(4) { animation-delay: 0.55s; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 selection:bg-amber-500 selection:text-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
 
   <header class="w-full max-w-xl flex items-center justify-between pb-3 pt-1 border-b border-slate-800/80">
     <div class="flex items-center gap-2.5">
@@ -195,28 +195,31 @@
       </div>
     </div>
 
-    <div class="flex items-center justify-center gap-3">
+    <!-- Панель кнопок: на смартфонах сетка 2х2 в две строки, на десктопе — одна строка -->
+    <div class="grid grid-cols-2 sm:flex sm:items-center sm:justify-center gap-2.5 w-full">
       <!-- Кнопка Пуск / Пауза -->
-      <button id="mainToggleBtn" class="flex-1 max-w-[220px] py-3.5 px-6 rounded-2xl font-bold text-sm bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
-        <svg id="playSvg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        <svg id="pauseSvg" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-        <span id="toggleButtonText">ПУСК</span>
+      <button id="mainToggleBtn" class="py-3.5 px-4 sm:px-6 rounded-2xl font-bold text-sm bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/20 transition flex items-center justify-center gap-2 cursor-pointer sm:flex-1 sm:max-w-[220px]">
+        <svg id="playSvg" class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="pauseSvg" class="w-4 h-4 fill-current hidden flex-shrink-0" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="toggleButtonText" class="truncate">ПУСК</span>
       </button>
 
       <!-- Следующее число вручную -->
-      <button id="skipNextBtn" disabled class="py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-slate-200 active:scale-95 transition flex items-center gap-1.5">
+      <button id="skipNextBtn" disabled class="py-3.5 px-4 sm:px-5 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5 sm:flex-none">
         <span>Дальше</span>
-        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M5 18l10-6-10-6v12zm11-12v12h2V6h-2z"/></svg>
+        <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M5 18l10-6-10-6v12zm11-12v12h2V6h-2z"/></svg>
       </button>
 
       <!-- Повторить озвучку -->
-      <button id="repeatVoiceBtn" disabled class="py-3.5 px-4 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-amber-300 active:scale-95 transition" title="Повторить произношение">
-        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      <button id="repeatVoiceBtn" disabled class="py-3.5 px-3 sm:px-4 rounded-2xl font-semibold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-amber-300 active:scale-95 transition flex items-center justify-center gap-1.5 sm:flex-none" title="Повторить произношение">
+        <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        <span class="text-xs sm:hidden">Повторить</span>
       </button>
 
       <!-- Сброс -->
-      <button id="resetAllBtn" class="py-3.5 px-4 rounded-2xl text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 hover:bg-slate-850 active:scale-95 transition" title="Сбросить всё">
-        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      <button id="resetAllBtn" class="py-3.5 px-3 sm:px-4 rounded-2xl font-semibold text-sm text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 hover:bg-slate-850 active:scale-95 transition flex items-center justify-center gap-1.5 sm:flex-none" title="Сбросить всё">
+        <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <span class="text-xs sm:hidden">Сброс</span>
       </button>
     </div>
 

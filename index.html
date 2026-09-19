@@ -34,6 +34,22 @@
     .wave-bar:nth-child(2) { animation-delay: 0.25s; }
     .wave-bar:nth-child(3) { animation-delay: 0.4s; }
     .wave-bar:nth-child(4) { animation-delay: 0.55s; }
+    
+    /* Стилизация полосы прокрутки для истории */
+    #historyRow::-webkit-scrollbar {
+      height: 6px;
+    }
+    #historyRow::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5); /* slate-900 */
+      border-radius: 10px;
+    }
+    #historyRow::-webkit-scrollbar-thumb {
+      background-color: #475569; /* slate-600 */
+      border-radius: 10px;
+    }
+    #historyRow::-webkit-scrollbar-thumb:hover {
+      background-color: #64748b; /* slate-500 */
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
@@ -320,6 +336,7 @@
       timerAnimId: null,
       startTime: null,
       selectedVoice: null,
+      savedVoiceName: null,
       activeUtterance: null,
       audioWaitTimeout: null
     };
@@ -392,8 +409,8 @@
     modeVisualBtn.addEventListener('click', () => setMode('visual'));
     modeAudioBtn.addEventListener('click', () => setMode('audio'));
 
-    function setMode(newMode) {
-      if (app.running) pauseWorkout();
+    function setMode(newMode, isInit = false) {
+      if (app.running && !isInit) pauseWorkout();
       app.mode = newMode;
       
       if (newMode === 'visual') {
@@ -403,7 +420,11 @@
         modeAudioBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition active:scale-95';
         modeVisualBtn.className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-300 transition active:scale-95';
       }
-      resetAllBtn.click();
+
+      if (!isInit) {
+        resetAllBtn.click();
+        if (typeof saveSettings === 'function') saveSettings();
+      }
     }
 
     function populateVoices() {
@@ -430,6 +451,16 @@
         voiceSelectEl.appendChild(opt);
       });
 
+      // Применяем сохраненный голос, если он есть
+      if (app.savedVoiceName) {
+        const savedVoice = germanVoices.find(v => v.name === app.savedVoiceName);
+        if (savedVoice) {
+          app.selectedVoice = savedVoice;
+          voiceSelectEl.value = savedVoice.name;
+          return;
+        }
+      }
+
       // Предпочитаем естественные локальные немецкие голоса
       const preferred = germanVoices.find(v => v.localService) || germanVoices[0];
       if (preferred) {
@@ -441,9 +472,10 @@
     voiceSelectEl.addEventListener('change', () => {
       const voices = window.speechSynthesis.getVoices();
       app.selectedVoice = voices.find(v => v.name === voiceSelectEl.value) || null;
+      if (typeof saveSettings === 'function') saveSettings();
     });
 
-    function updateSpeechRate(newRate) {
+    function updateSpeechRate(newRate, isInit = false) {
       let r = parseFloat(newRate);
       if (isNaN(r)) r = 0.9;
       r = Math.max(0.4, Math.min(2.0, r));
@@ -459,6 +491,8 @@
           btn.className = 'rate-preset-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 text-[10px]';
         }
       });
+      
+      if (!isInit && typeof saveSettings === 'function') saveSettings();
     }
 
     rateSliderEl.addEventListener('input', (e) => updateSpeechRate(e.target.value));
@@ -504,6 +538,7 @@
       if (rangeSecondsEl) rangeSecondsEl.value = sec;
       if (secondsSliderEl) secondsSliderEl.value = Math.min(sec, 15);
       if (secondsLabelEl) secondsLabelEl.textContent = sec.toFixed(1) + ' сек';
+      if (typeof saveSettings === 'function') saveSettings();
     }
 
     if (secondsSliderEl) {
@@ -530,6 +565,7 @@
       }
       app.min = min;
       app.max = max;
+      if (typeof saveSettings === 'function') saveSettings();
       return true;
     }
 
@@ -873,8 +909,61 @@
       }
     });
 
+    // --- СОХРАНЕНИЕ НАСТРОЕК (LocalStorage) ---
+    function saveSettings() {
+      const settings = {
+        mode: app.mode,
+        min: rangeMinEl.value,
+        max: rangeMaxEl.value,
+        duration: app.duration,
+        noRepeat: noRepeatCheckEl.checked,
+        speechRate: app.speechRate,
+        voiceName: voiceSelectEl.value
+      };
+      localStorage.setItem('zahlenTrainerSettings', JSON.stringify(settings));
+    }
+
+    function loadSettings() {
+      const saved = localStorage.getItem('zahlenTrainerSettings');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          
+          if (settings.mode) setMode(settings.mode, true);
+          
+          if (settings.min !== undefined) rangeMinEl.value = settings.min;
+          if (settings.max !== undefined) rangeMaxEl.value = settings.max;
+          
+          if (settings.duration !== undefined) {
+            app.duration = settings.duration;
+            rangeSecondsEl.value = settings.duration;
+            secondsSliderEl.value = Math.min(settings.duration, 15);
+            secondsLabelEl.textContent = settings.duration.toFixed(1) + ' сек';
+          }
+          
+          if (settings.noRepeat !== undefined) noRepeatCheckEl.checked = settings.noRepeat;
+          
+          if (settings.speechRate !== undefined) {
+            updateSpeechRate(settings.speechRate, true);
+          }
+          
+          if (settings.voiceName) {
+            app.savedVoiceName = settings.voiceName;
+          }
+        } catch (e) {
+          console.error("Ошибка загрузки настроек", e);
+        }
+      }
+    }
+    
+    noRepeatCheckEl.addEventListener('change', () => {
+      resetPool();
+      saveSettings();
+    });
+
     // Инициализация при загрузке страницы
     window.onload = () => {
+      loadSettings();
       initSpeech();
       validateRange();
       resetPool();
